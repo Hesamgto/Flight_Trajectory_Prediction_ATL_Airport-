@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Training outputs
+results/
+*.h5
+*.keras
+*.png
+!docs/**/*.png
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
