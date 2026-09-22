@@ -1,5 +1,9 @@
 # Flight Trajectory Prediction with Deep Learning
 
+[![CI](https://github.com/Hesamgto/flight-trajectory-prediction/actions/workflows/ci.yml/badge.svg)](https://github.com/Hesamgto/flight-trajectory-prediction/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](requirements.txt)
+
 Research code for two published papers on 4D flight trajectory prediction
 using hybrid deep learning models (CNN, GRU, 3D-CNN) trained on ADS-B
 surveillance data, by **Hesam Shafienya** and **Amelia C. Regan**.
@@ -20,6 +24,13 @@ Airport (ATL) traffic from the OpenSky Network — from two angles:
 - **Paper 2** asks *how should spatial and temporal features be fed into a
   CNN-GRU*, comparing a separated-input architecture (spatial → CNN,
   temporal → GRU, fused) against the common unified-input approach.
+
+## Results (as reported in the papers)
+
+<p float="left">
+  <img src="docs/paper1_results.png" width="49%" alt="Paper 1: CG3D vs. baselines, MAE and RMSE" />
+  <img src="docs/paper2_results.png" width="49%" alt="Paper 2: separated vs. unified CNN-GRU, MAE and RMSE" />
+</p>
 
 ## Repository layout
 
@@ -43,7 +54,7 @@ details, results table, and how to run it.
 ## Getting started
 
 ```bash
-git clone https://github.com/<your-username>/flight-trajectory-prediction.git
+git clone https://github.com/Hesamgto/flight-trajectory-prediction.git
 cd flight-trajectory-prediction
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt

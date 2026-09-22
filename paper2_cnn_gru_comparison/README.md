@@ -27,6 +27,8 @@ comparing two ways of feeding it spatio-temporal ADS-B features:
 The separated architecture reduces MAE by 35.85% and RMSE by 20.48% over the
 unified one (Table 2 of the paper).
 
+![Separated vs. unified CNN-GRU](../docs/paper2_results.png)
+
 ## Repo structure
 
 ```

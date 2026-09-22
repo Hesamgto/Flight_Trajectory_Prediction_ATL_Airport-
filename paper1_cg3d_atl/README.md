@@ -27,6 +27,8 @@ against six baselines: CNN, GRU, LSTM, MLP, C3D alone, and CNN-GRU alone.
 (From Tables 3–4 of the paper; errors are on PCA-reduced, standardized
 targets — see "Notes on faithfulness" below.)
 
+![CG3D vs. baselines](../docs/paper1_results.png)
+
 ## Repo structure
 
 ```
