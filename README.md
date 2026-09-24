@@ -20,7 +20,7 @@ Airport (ATL) traffic from the OpenSky Network — from two angles:
 
 - **Paper 1 (CG3D)** asks *which model family works best*, comparing a
   CNN-GRU + 3D-CNN fusion (with an optional Monte-Carlo-Dropout uncertainty
-  variant) against CNN, GRU, LSTM, MLP, and 3D-CNN baselines.
+  variant) against CNN, GRU, LSTM, and 3D-CNN baselines.
 - **Paper 2** asks *how should spatial and temporal features be fed into a
   CNN-GRU*, comparing a separated-input architecture (spatial → CNN,
   temporal → GRU, fused) against the common unified-input approach.
