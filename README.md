@@ -28,8 +28,8 @@ Airport (ATL) traffic from the OpenSky Network — from two angles:
 ## Results (as reported in the papers)
 
 <p float="left">
-  <img src="docs/paper1_results.png" width="49%" length="51%" alt="Paper 1: CG3D vs. baselines, MAE and RMSE" />
-  <img src="docs/paper2_results.png" width="49%" length="51%" alt="Paper 2: separated vs. unified CNN-GRU, MAE and RMSE" />
+  <img src="docs/paper1_results.png" width="49%" alt="Paper 1: CG3D vs. baselines, MAE and RMSE" />
+  <img src="docs/paper2_results.png" width="49%" alt="Paper 2: separated vs. unified CNN-GRU, MAE and RMSE" />
 </p>
 
 ## Repository layout
