@@ -33,14 +33,12 @@ targets — see "Notes on faithfulness" below.)
 
 ```
 paper1_cg3d_atl/
-├── data/                  # sample_flight_data.csv is synthetic (see below)
+├── data/                     # sample_flight_data.csv is synthetic (see below)
 └── src/
-    ├── make_sample_data.py  # generates a demo trajectory
-    ├── preprocessing.py      # interpolation, sliding window, scaling, PCA
-    ├── models.py              # all 8 model builders (CNN, GRU, LSTM, MLP,
-    │                          # C3D, CNN-GRU, CRC3D/CG3D, CG3D+MCDropout)
-    ├── train.py               # CLI: build, fit, evaluate, save
-    └── evaluate.py            # MAE/RMSE + history/metric logging
+    ├── make_sample_data.py   # generates a demo trajectory
+    └── cg3d_model.py         # data prep + all 8 models (CNN, GRU, LSTM, MLP,
+                               # C3D, CNN-GRU, CG3D, CG3D+MCDropout), Spyder-
+                               # cell-style (#%%), same as the original script
 ```
 
 ## Setup
@@ -49,55 +47,72 @@ paper1_cg3d_atl/
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r ../requirements.txt
 ```
+`plot_model()` also needs the `graphviz` system package (not just the `pydot`
+pip package): `brew install graphviz` on macOS, `apt-get install graphviz` on
+Ubuntu.
 
 ## Quickstart (synthetic demo data)
 
-The real experiments use OpenSky Network ADS-B history for ATL
-(Feb 28 2020 – Mar 30 2020 / Mar 30 2016 – Mar 30 2020 depending on the
-draft), which is too large and not ours to redistribute. `make_sample_data.py`
-fabricates a short, physically plausible single-flight trajectory with the
-same columns so you can run the full pipeline immediately:
+The real experiments use OpenSky Network ADS-B history for ATL, which is too
+large and not ours to redistribute. `make_sample_data.py` fabricates a short,
+physically plausible single-flight trajectory with the same columns so the
+script can be run immediately:
 
 ```bash
 python src/make_sample_data.py --rows 5000 --out data/sample_flight_data.csv
-
-# Any single model:
-python src/train.py --data data/sample_flight_data.csv --model crc3d_mc \
-    --epochs 20 --batch-size 512
-
-# The full comparison, like Table 3/4 in the paper:
-python src/train.py --data data/sample_flight_data.csv --model all \
-    --epochs 500 --batch-size 512
+python src/cg3d_model.py
 ```
 
-`--model` accepts `cnn`, `gru`, `lstm`, `mlp`, `c3d`, `cnn_gru`, `crc3d`
-(= CG3D), `crc3d_mc` (= CG3D + MC-Dropout), or `all`. Results (trained model,
-per-epoch history, and MAE/RMSE in both PCA space and inverse-transformed
-physical units) are written to `--output-dir` (default `results/`).
+`cg3d_model.py` is one script, run top to bottom, organized into `#%%` cells
+the same way the original research script was (works as-is with `python`, or
+open it in Spyder/VS Code and run cell by cell interactively). It builds and
+trains all 8 models in sequence -- CNN, GRU, LSTM, MLP, C3D, CNN-GRU, CG3D
+(named `CRC3D` in the code), and CG3D+MC-Dropout -- and prints a final MAE/RMSE
+comparison. Each model also saves its own architecture diagram (`*_model.png`,
+needs `graphviz`), training history (`history_*.csv`), and trained weights
+(`*.keras`) into the working directory as it goes, matching the original
+script's habit of saving artifacts along the way rather than only at the end.
+
+Training is slow at the paper's own settings (500 epochs, batch size 512); to
+try it faster, lower `epochs=500` near the top of each model's `.fit()` call.
 
 ## To reproduce the paper's results
 
-Point `--data` at your own ADS-B extract with columns
-`time, lat, lon, heading, velocity, vertrate, hour` (see
-[OpenSky Network](https://opensky-network.org/) for historical data access),
-and use `--window-size 100` (the paper's sliding-window length) with
-`--epochs 500 --batch-size 512`, matching the paper's training setup.
+Point `DATA_PATH` (near the top of the script) at your own ADS-B extract with
+columns `time, lat, lon, heading, velocity, vertrate, hour` (see
+[OpenSky Network](https://opensky-network.org/) for historical data access).
+`window_size = 100`, `epochs=500`, and `batch_size=512` are already set to
+match the paper's training setup.
 
 ## Notes on faithfulness to the original code
 
-This is a cleaned-up, modernized (TensorFlow 2 / `tf.keras`) rewrite of the
-original research script, restructured into reusable modules. The model
-architectures, layer sizes, dropout rates, and training hyperparameters are
-unchanged. A few genuine bugs in the original script were fixed along the way:
+This is the original research script (`Final_models_Prof_Regan_6.py`),
+cleaned up to actually run start-to-finish under current TensorFlow -- same
+variable-naming convention, same `#%%` cell layout, same comment style. A
+handful of genuine bugs were fixed along the way, since a portfolio piece
+should actually run correctly rather than merely look like the original:
 
-- `CuDNNGRU`/`CuDNNLSTM` (removed in TF2) replaced with `GRU`/`LSTM`, which
-  use the cuDNN kernel automatically under the same conditions.
-- Two spots called `BatchNormalization(x)` instead of `BatchNormalization()(x)`
-  (constructing the layer with `x` as an argument rather than calling it on
-  `x`) — fixed.
-- Output layer sizes were hard-coded (e.g. `Dense(6)`) assuming a specific
-  PCA-reduced dimensionality; they're now inferred from the data.
+- **Interpolation was silently a no-op.** `dataset['lat']` returns an
+  independent copy under pandas' copy-on-write, so interpolating that copy
+  "inplace" never wrote the filled values back into `dataset`. Missing
+  values were reaching the model unfilled. Fixed by assigning the
+  interpolated series back explicitly.
+- **`CuDNNGRU`/`CuDNNLSTM`** (removed in TF2, so the original no longer even
+  imports) replaced with `GRU`/`LSTM`, which use the same fused cuDNN kernel
+  automatically under the same conditions.
+- **Two spots called `BatchNormalization(x)`** instead of
+  `BatchNormalization()(x)` -- constructing the layer with `x` as an argument
+  rather than calling the layer on `x` -- fixed.
+- **A stale-shape reshape bug in the CRC3D section**: `X_Sp_train` /
+  `X_Tp_train` are already reshaped to `(N, 1, F)` earlier in the CNN-GRU
+  section; a leftover reshape further down tried to treat them as 2D again,
+  which corrupts the array (or crashes, depending on shapes). This only
+  didn't surface in the original because Spyder-style cell-by-cell reruns
+  can regenerate those arrays fresh out of order -- as a straight-through
+  script it needed removing the redundant reshape.
+- **Output layer sizes were hard-coded** (e.g. `Dense(6)`) assuming a
+  specific PCA-reduced dimensionality; now computed from the data
+  (`output_dim = Y_train.shape[1]`) so it adapts to whatever PCA keeps.
 - A no-op data-chunking loop that reread the whole CSV without changing
-  behavior was removed.
-- ~900 lines of copy-pasted "dump this metric to .txt then re-read it into a
-  .csv" boilerplate were replaced with one `evaluate.save_history()` call.
+  behavior was removed, and `plt.show()` (which blocks/hangs outside an
+  interactive session) was swapped for `plt.savefig()`.

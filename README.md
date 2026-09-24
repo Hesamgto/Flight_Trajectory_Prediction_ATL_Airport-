@@ -38,15 +38,19 @@ Airport (ATL) traffic from the OpenSky Network — from two angles:
 flight-trajectory-prediction/
 ├── paper1_cg3d_atl/              # Transportation Research Part C
 │   ├── data/                     # synthetic demo trajectory
-│   ├── src/                      # preprocessing, models, train, evaluate
+│   ├── src/cg3d_model.py         # data prep + all 8 models, one script
 │   └── README.md
 ├── paper2_cnn_gru_comparison/    # IEEE Aerospace 2022
 │   ├── data/
-│   ├── src/
+│   ├── src/cnn_gru_comparison.py # data prep + both architectures, one script
 │   └── README.md
 ├── requirements.txt
 └── LICENSE
 ```
+
+Each script is organized the same way the original research code was: one
+file per paper, run top to bottom, split into `#%%` cells (works directly
+with `python`, or open it in Spyder/VS Code to run cell by cell).
 
 Each paper's folder is self-contained — see its own README for the model
 details, results table, and how to run it.
@@ -61,8 +65,11 @@ pip install -r requirements.txt
 
 cd paper1_cg3d_atl
 python src/make_sample_data.py
-python src/train.py --data data/sample_flight_data.csv --model crc3d_mc --epochs 20
+python src/cg3d_model.py
 ```
+(`plot_model()` also needs the `graphviz` system package, not just the
+`pydot` pip package: `brew install graphviz` on macOS, `apt-get install
+graphviz` on Ubuntu.)
 
 Real ADS-B trajectory data (historical OpenSky Network extracts for ATL) is
 not included here for size and licensing reasons; each `src/make_sample_data.py`

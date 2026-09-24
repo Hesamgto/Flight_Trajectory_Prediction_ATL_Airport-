@@ -5,3 +5,5 @@ scikit-learn>=1.5
 numba>=0.60
 matplotlib>=3.9
 tensorflow>=2.16
+pydot>=2.0   # needed for plot_model(); also requires the graphviz system package
+             # (macOS: brew install graphviz, Ubuntu: apt-get install graphviz)

@@ -11,7 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        paper: [paper1_cg3d_atl, paper2_cnn_gru_comparison]
+        include:
+          - paper: paper1_cg3d_atl
+            script: cg3d_model.py
+          - paper: paper2_cnn_gru_comparison
+            script: cnn_gru_comparison.py
 
     steps:
       - uses: actions/checkout@v4
@@ -20,25 +24,28 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install system dependencies (graphviz, for plot_model)
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
 
       - name: Generate synthetic sample data
         working-directory: ${{ matrix.paper }}
         run: python src/make_sample_data.py --rows 600 --out data/sample_flight_data.csv
 
-      - name: Smoke-test paper1 models (build + 1 epoch, no crash)
-        if: matrix.paper == 'paper1_cg3d_atl'
+      # These scripts are written to be run top-to-bottom as-is (epochs=500,
+      # the paper's own window size, DATA_PATH pointing at real data). For a
+      # fast CI smoke test we only need to confirm every model still builds
+      # and trains without crashing, so this dials epochs/window/batch size
+      # down on a throwaway copy rather than editing the real script.
+      - name: Smoke-test (reduced epochs, confirms it runs end to end)
         working-directory: ${{ matrix.paper }}
         run: |
-          for model in cnn gru lstm mlp c3d cnn_gru crc3d crc3d_mc; do
-            python src/train.py --data data/sample_flight_data.csv --model "$model" \
-              --epochs 1 --batch-size 32 --window-size 10 --output-dir /tmp/ci-results
-          done
-
-      - name: Smoke-test paper2 models (build + 1 epoch, no crash)
-        if: matrix.paper == 'paper2_cnn_gru_comparison'
-        working-directory: ${{ matrix.paper }}
-        run: |
-          python src/train.py --data data/sample_flight_data.csv --model both \
-            --epochs 1 --batch-size 32 --window-size 10 --output-dir /tmp/ci-results
+          sed \
+            -e "s/epochs=500/epochs=1/g" \
+            -e "s/window_size = 100/window_size = 10/g" \
+            -e "s/window_size = 50/window_size = 10/g" \
+            -e "s/batch_size=512/batch_size=32/g" \
+            src/${{ matrix.script }} > /tmp/ci_smoke_test.py
+          python /tmp/ci_smoke_test.py
